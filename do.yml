@@ -1,0 +1,32 @@
+---
+### Decalative Onboarding
+- hosts: localhost
+  gather_facts: false
+  connection: local
+  vars_files:
+    - vars
+  tasks:
+    - name: Install DO package
+      bigip_lx_package:
+        package: "./f5-do.rpm"
+        provider:
+          server: 192.168.2.127
+          user: admin
+          password: admin
+          validate_certs: false
+      delegate_to: localhost
+
+    - name: Build JSON payload
+      template: src={{do_template}}.j2 dest={{do_template}}.json
+
+    - name: Send DO configuration to bigip
+      uri:
+        url: https://192.168.2.127/mgmt/shared/declarative-onboarding
+        user: admin
+        password: admin
+        method: POST
+        body: "{{(lookup('file','{{do_template}}.json'))}}"
+        body_format: json
+        status_code: 202
+        timeout: 180
+        validate_certs: false
